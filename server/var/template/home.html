@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>_MissionControl (SINTHIUS)</title>
+    <link rel="stylesheet"
+          href="{{static_url('vendor/bootstrap/css/bootstrap.min.css')}}">
+    <link rel="stylesheet"
+          href="{{static_url('vendor/font-awesome/css/font-awesome.min.css')}}">
+    <link rel="stylesheet"
+          href="{{static_url('vendor/json-viewer/jquery.json-viewer.css')}}">
+    <style>
+        .content {margin: 64px 16px 16px 16px;}
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-inverse navbar-fixed-top">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <!-- button type="button" class="navbar-toggle collapsed"
+                    data-toggle="collapse" data-target="#navbar"
+                    aria-expanded="false" aria-controls="navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button -->
+            <a class="navbar-brand" href="#">_SINTHIUS</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+            <ul class="nav navbar-nav navbar-right"></ul>
+        </div>
+    </div>
+</nav>
+<div class="container-fluid">
+    <div class="row">
+        <div class="content">
+            <h4>Options:</h4>
+            <div class="list-group">
+                <a href="/ping" target="_blank" class="list-group-item">
+                    <span class="glyphicon glyphicon-eye-open" aria-hidden="true">
+                    </span>&nbsp;#&nbsp;Ping</a>
+                <a href="/stats" target="_blank" class="list-group-item">
+                    <span class="fa fa-line-chart" aria-hidden="true">
+                    </span>&nbsp;#&nbsp;Stats</a>
+                <a href="/a/mc" target="_blank" class="list-group-item">
+                    <span class="fa fa-laptop" aria-hidden="true">
+                    </span>&nbsp;#&nbsp;Mission Control</a>
+                <a href="/a/console" target="_blank" class="list-group-item">
+                    <span class="fa fa-keyboard-o" aria-hidden="true">
+                    </span>&nbsp;#&nbsp;Console</a>
+            </div>
+            <h4>API:</h4>
+            <div class="list-group">
+                <a href="/api/node" target="_blank" class="list-group-item">
+                    <span class="fa fa-link" aria-hidden="true">
+                    </span>&nbsp;&nbsp;/api/node</a>
+                <a href="/api/node/health" target="_blank" class="list-group-item">
+                    <span class="fa fa-link" aria-hidden="true">
+                    </span>&nbsp;&nbsp;/api/node/health</a>
+                <a href="/api/node/lock" target="_blank" class="list-group-item">
+                    <span class="fa fa-link" aria-hidden="true">
+                    </span>&nbsp;&nbsp;/api/node/lock</a>
+                <a href="/api/node/unlock" target="_blank" class="list-group-item">
+                    <span class="fa fa-link" aria-hidden="true">
+                    </span>&nbsp;&nbsp;/api/node/unlock</a>
+                <a href="/api/nodes" target="_blank" class="list-group-item">
+                    <span class="fa fa-link" aria-hidden="true">
+                    </span>&nbsp;&nbsp;/api/nodes</a>
+                <a href="/api/nodes/alive" target="_blank" class="list-group-item">
+                    <span class="fa fa-link" aria-hidden="true">
+                    </span>&nbsp;&nbsp;/api/nodes/alive</a>
+                <a href="/api/nodes/alive/health" target="_blank" class="list-group-item">
+                    <span class="fa fa-link" aria-hidden="true">
+                    </span>&nbsp;&nbsp;/api/nodes/alive/health</a>
+                <a href="/api/nodes/fallen" target="_blank" class="list-group-item">
+                    <span class="fa fa-link" aria-hidden="true">
+                    </span>&nbsp;&nbsp;/api/nodes/fallen</a>
+                <a href="/api/nodes/hash" target="_blank" class="list-group-item">
+                    <span class="fa fa-link" aria-hidden="true">
+                    </span>&nbsp;&nbsp;/api/nodes/hash</a>
+                <a href="/api/nodes/canonical" target="_blank" class="list-group-item">
+                    <span class="fa fa-link" aria-hidden="true">
+                    </span>&nbsp;&nbsp;/api/nodes/canonical</a>
+            </div>
+            {% if scope.application.nodes %}
+            <h4>Nodes:</h4>
+            <div class="list-group">
+                {% for node in sorted(scope.application.nodes) %}
+                <a href="/api/get?node={{node}}" target="_blank" class="list-group-item">
+                    <span class="fa fa-link" aria-hidden="true">
+                    </span>&nbsp;&nbsp;/api/get?node={{node}}</a>
+                {% end %}
+            </div>
+            {% end %}
+            <h4>Settings:</h4>
+            <div><pre id="json-renderer"></pre></div>
+        </div>
+    </div>
+</div>
+<script src="{{static_url('vendor/jquery/jquery-2.2.3.min.js')}}"></script>
+<script src="{{static_url('vendor/bootstrap/js/bootstrap.min.js')}}"></script>
+<script src="{{static_url('vendor/json-viewer/jquery.json-viewer.js')}}"></script>
+<script>
+    $(function() {
+        var data = {% raw scope.json_dumps(scope.settings, sort_keys=True) %};
+        $('#json-renderer').jsonViewer(data, {collapsed: false, withQuotes: false});
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+include requirements.txt CHANGES LICENSE AUTHORS *.py *.rst
+exclude fabfile.py
+graft docs
+graft examples
+global-exclude *.py[co]
+prune docs/_build
+prune docs/_themes
