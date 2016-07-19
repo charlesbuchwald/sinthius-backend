@@ -569,11 +569,11 @@ class SocketApplication(ServerApplication):
             bool(_CHANNEL in self.mission_control.subscribed)
         result = all(response.values())
         logging.info(' # HEALTH PING (%s): %s', result, response)
-        _alive = list(set(_NODES.keys()) ^ _FALLEN_NODES)
         response['scope'] = \
             {'nodes': {'alive': list(set(_NODES.keys()) ^ _FALLEN_NODES),
                        'fallen': list(_FALLEN_NODES)}}
-        return result, response
+        response.update(self.uptime())
+        return result, {'status': result, 'details': response}
 
 
 class Struct(object):

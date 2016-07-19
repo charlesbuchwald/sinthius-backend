@@ -8,8 +8,8 @@
 
 import logging
 from sinthius.drivers.base import _fetch
-from sinthius_octopus.backend.base import WebSocketApiHandler, WebSocketHandler, \
-    rx_node
+from sinthius_octopus.backend.base import WebSocketApiHandler, \
+    WebSocketHandler, rx_node
 from tornado import gen, httpclient
 
 

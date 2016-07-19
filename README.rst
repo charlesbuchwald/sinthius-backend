@@ -1,15 +1,8 @@
+
 SINTHIUS
 ========
 
-Museografica's Sinthius EMS, back end only.
-
 SINTHIUS, is a BaaS Framework written in Python.
-
-
-NOTES:
-------
-
-There are other repositories for the front end and the installer.
 
 
 Installation

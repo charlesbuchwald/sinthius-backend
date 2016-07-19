@@ -6,54 +6,186 @@
     <meta name="viewport"
           content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <title>_MissionControl (SINTHIUS)</title>
-    <link rel="stylesheet"
-          href="{{static_url('vendor/bootstrap/css/bootstrap.min.css')}}">
-    <link rel="stylesheet"
-          href="{{static_url('vendor/font-awesome/css/font-awesome.min.css')}}">
-    <link rel="stylesheet"
-          href="{{static_url('vendor/ionicons/css/ionicons.min.css')}}">
-    <link rel="stylesheet"
-          href="{{static_url('css/admin.css')}}">
-    <link rel="stylesheet"
-          href="{{static_url('css/skins/skin-blue.css')}}">
+    <link rel="stylesheet" href="{{static_url('vendor/animate.css/animate.css')}}">
+    <link rel="stylesheet" href="{{static_url('vendor/bootstrap/css/bootstrap.min.css')}}">
+    <link rel="stylesheet" href="{{static_url('vendor/font-awesome/css/font-awesome.min.css')}}">
+    <link rel="stylesheet" href="{{static_url('vendor/ionicons/css/ionicons.min.css')}}">
+    <link rel="stylesheet" href="{{static_url('css/pe-icons/pe-icon-7-stroke.css')}}">
+    <link rel="stylesheet" href="{{static_url('css/pe-icons/helper.css')}}">
+    <link rel="stylesheet" href="{{static_url('css/stroke-icons/style.css')}}">
+    <link rel="stylesheet" href="{{static_url('css/style.css')}}">
 </head>
-<body class="hold-transition skin-blue fixed">
-<div class="wrapper">
-    <header class="main-header">
-        <a href="/a/mc" class="logo">
-            <span class="logo-mini"><b>_M</b>C</span>
-            <span class="logo-lg"><b>_Mission</b>Control</span>
-        </a>
-        <nav class="navbar navbar-static-top" role="navigation">
-            <a href="#" class="sidebar-toggle" data-toggle="offcanvas" role="button">
-                <span class="sr-only">Toggle navigation</span>
-            </a>
-            <div class="navbar-custom-menu">
-                <ul class="nav navbar-nav">
-                </ul>
+<body>
+
+    <!-- content -->
+
+    <div class="wrapper">
+        <nav class="navbar navbar-default navbar-fixed-top">
+            <div class="container-fluid">
+                <div class="navbar-header">
+                    <div id="mobile-menu">
+                        <div class="left-nav-toggle">
+                            <a href="#"><i class="stroke-hamburgermenu"></i></a>
+                        </div>
+                    </div>
+                    <a class="navbar-brand" href="/a/mc">_MissionControl</a>
+                </div>
+                <div id="navbar" class="navbar-collapse collapse">
+                    <div class="left-nav-toggle">
+                        <a href=""><i class="stroke-hamburgermenu"></i></a>
+                    </div>
+                    <ul class="nav navbar-nav navbar-right"></ul>
+                </div>
             </div>
         </nav>
-    </header>
-    <aside class="main-sidebar">
-        <section class="sidebar">
-            <ul class="sidebar-menu">
-                <li class="header">NODES</li>
-                <li><a href="#"><i class="fa fa-link"></i><span>All</span></a></li>
-                <li><a href="#"><i class="fa fa-link"></i><span>Alive</span></a></li>
-                <li><a href="#"><i class="fa fa-link"></i><span>Fallen</span></a></li>
-            </ul>
-        </section>
-    </aside>
-    <div class="content-wrapper">
-        <section class="content">
 
+        <aside class="navigation">
+            <nav>
+                <ul class="nav luna-nav">
+                    <li class="nav-category">Nodes</li>
+                    <li><a href="#">Dashboard</a></li>
+                    <li>
+                        <a href="#monitoring" data-toggle="collapse" aria-expanded="true">
+                            Monitoring<span class="sub-nav-icon"><i class="stroke-arrow"></i></span>
+                        </a>
+                        <ul id="monitoring" class="nav nav-second collapse">
+                            <li><a href="#">All</a></li>
+                            <li><a href="#">Alive</a></li>
+                            <li><a href="#">Fallen</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-category">Content</li>
+                    <li><a href="#"> Update</a></li>
+                    <li><a href="#"> Upgrade</a></li>
+                    <li class="nav-category">Admin</li>
+                    <li><a href="#">Restart</a></li>
+                    <li><a href="#">Shutdown</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <section class="content">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-lg-4 col-xs-4">
+                        <div class="panel panel-filled">
+                            <div class="panel-body">
+                                <h2 class="m-b-none">0 <span class="slight">of 0</span></h2>
+                                <div class="small">Total nodes</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 col-xs-4">
+                        <div class="panel panel-filled">
+                            <div class="panel-body">
+                                <h2 class="m-b-none">0 <span class="slight">of 0</span></h2>
+                                <div class="small">Total alive nodes</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 col-xs-4">
+                        <div class="panel panel-filled">
+                            <div class="panel-body">
+                                <h2 class="m-b-none">0 <span class="slight">of 0</span></h2>
+                                <div class="small">Total fallen nodes</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-12">
+                        <div class="view-header">
+                            <div class="header-icon">
+                                <i class="pe page-header-icon pe-7s-gleam"></i>
+                            </div>
+                            <div class="header-title">
+                                <h3 class="m-b-xs">Alive Nodes</h3>
+                                <small>List of all online nodes</small>
+                            </div>
+                        </div>
+                        <hr>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-12">
+                        <div class="panel">
+                            <div class="panel-body">
+                                <div class="table-responsive">
+                                    <table  class="table">
+                                        <thead>
+                                            <tr>
+                                                <th width="30%">Name</th>
+                                                <th width="10%">IP</th>
+                                                <th width="10%">Port</th>
+                                                <th width="10%">Lock</th>
+                                                <th width="20%">Uptime</th>
+                                                <th width="10%">Health</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="table-body">
+                                            <tr id="table-loading">
+                                                <td>loading data...</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </section>
     </div>
-    <footer class="main-footer"></footer>
-</div>
-<script src="{{static_url('vendor/jquery/jquery-2.2.3.min.js')}}"></script>
-<script src="{{static_url('vendor/slimscroll/jquery.slimscroll.min.js')}}"></script>
-<script src="{{static_url('vendor/bootstrap/js/bootstrap.min.js')}}"></script>
-<script src="{{static_url('js/admin.js')}}"></script>
+
+    <!-- scripts -->
+
+    <script src="{{static_url('vendor/pacejs/pace.min.js')}}"></script>
+    <script src="{{static_url('vendor/jquery/jquery-2.2.3.min.js')}}"></script>
+    <script src="{{static_url('vendor/bootstrap/js/bootstrap.min.js')}}"></script>
+    <script src="{{static_url('js/luna.js')}}"></script>
+
+    <script>
+        $(document).ready(function(){
+            var key, nodes, node, uptime;
+            var _tbody = $('#table-body');
+            var _tloading = $('#table-loading');
+            var _template = '<tr id="{id}"><td>{name} ({node})</td><td>{ip}</td><td>{port}</td><td>{lock}</td><td>{uptime}</td><td>{health}</td></tr>';
+
+            $.getJSON('/api/nodes/alive/health', {}, function(data){
+                _tloading.remove();
+                nodes = data.response.alive.nodes;
+                console.log(nodes)
+                for(key in data.response.alive.nodes){
+                    node = nodes[key];
+                    uptime = node.health.details.uptime.uptime.info;
+                    _tbody.append(
+                        _template.replace('{id}', key)
+                            .replace('{name}', node.name)
+                            .replace('{node}', node.node)
+                            .replace('{ip}', node.ip)
+                            .replace('{port}', node.port)
+                            .replace('{lock}', node.lock)
+                            .replace('{uptime}',
+                                    '{days}d {hours}h {minutes}m {seconds}s'
+                                            .replace('{days}', uptime.days)
+                                            .replace('{hours}', uptime.hours)
+                                            .replace('{minutes}', uptime.minutes)
+                                            .replace('{seconds}', uptime.seconds)
+                            )
+                            .replace('{health}', node.health.status)
+                    )
+                }
+            });
+
+            $.getJSON('/api/nodes', {}, function(data){
+
+            });
+
+
+        });
+    </script>
+
 </body>
 </html>
