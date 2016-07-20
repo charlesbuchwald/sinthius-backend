@@ -106,15 +106,18 @@ class NodesAliveHealthHandler(WebSocketApiHandler):
     def get(self, *args, **kwargs):
         try:
             nodes = self.application.n_alive()
-            alive = {}
-            for item in nodes:
+            # alive = {}
+            alive = []
+            for item in sorted(nodes):
                 node = self.application.nodes[item]
                 url = 'http://{ip}:{port}/api/node/health'.format(**node)
                 response = yield _fetch(url)
                 if isinstance(response, httpclient.HTTPResponse):
                     if response.code == 200:
-                        alive[item] = \
-                            self.json_loads(response.body).get('response')
+                        # alive[item] = \
+                        #     self.json_loads(response.body).get('response')
+                        alive.append(
+                            self.json_loads(response.body).get('response'))
             self.success({
                 'alive': {'nodes': alive, 'total': len(alive)},
             }, sort_keys=True)

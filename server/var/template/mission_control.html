@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="{{static_url('vendor/bootstrap/css/bootstrap.min.css')}}">
     <link rel="stylesheet" href="{{static_url('vendor/font-awesome/css/font-awesome.min.css')}}">
     <link rel="stylesheet" href="{{static_url('vendor/ionicons/css/ionicons.min.css')}}">
+    <link rel="stylesheet" href="{{static_url('vendor/datatables/datatables.min.css')}}">
     <link rel="stylesheet" href="{{static_url('css/pe-icons/pe-icon-7-stroke.css')}}">
     <link rel="stylesheet" href="{{static_url('css/pe-icons/helper.css')}}">
     <link rel="stylesheet" href="{{static_url('css/stroke-icons/style.css')}}">
@@ -43,23 +44,10 @@
             <nav>
                 <ul class="nav luna-nav">
                     <li class="nav-category">Nodes</li>
-                    <li><a href="#">Dashboard</a></li>
-                    <li>
-                        <a href="#monitoring" data-toggle="collapse" aria-expanded="true">
-                            Monitoring<span class="sub-nav-icon"><i class="stroke-arrow"></i></span>
-                        </a>
-                        <ul id="monitoring" class="nav nav-second collapse">
-                            <li><a href="#">All</a></li>
-                            <li><a href="#">Alive</a></li>
-                            <li><a href="#">Fallen</a></li>
-                        </ul>
-                    </li>
+                    <li class="active"><a href="/a/mc">Dashboard</a></li>
                     <li class="nav-category">Content</li>
                     <li><a href="#"> Update</a></li>
                     <li><a href="#"> Upgrade</a></li>
-                    <li class="nav-category">Admin</li>
-                    <li><a href="#">Restart</a></li>
-                    <li><a href="#">Shutdown</a></li>
                 </ul>
             </nav>
         </aside>
@@ -67,27 +55,52 @@
         <section class="content">
             <div class="container-fluid">
                 <div class="row">
-                    <div class="col-lg-4 col-xs-4">
+                    {% set health = scope.application.health()[1]['details'] %}
+                    <div class="col-lg-2 col-xs-6">
                         <div class="panel panel-filled">
                             <div class="panel-body">
-                                <h2 class="m-b-none">0 <span class="slight">of 0</span></h2>
-                                <div class="small">Total nodes</div>
+                                <h2 class="m-b-none">
+                                    <i class="pe pe-7s-speaker text-warning"></i> {{ 'Ok' if health['publisher'] else 'X' }}</h2>
+                                <div class="small">Publisher</div>
                             </div>
                         </div>
                     </div>
-                    <div class="col-lg-4 col-xs-4">
+                    <div class="col-lg-2 col-xs-6">
                         <div class="panel panel-filled">
                             <div class="panel-body">
-                                <h2 class="m-b-none">0 <span class="slight">of 0</span></h2>
-                                <div class="small">Total alive nodes</div>
+                                <h2 class="m-b-none">
+                                    <i class="pe pe-7s-rocket text-warning"></i> {{ 'Ok' if health['mission_control'] else 'X' }}</h2>
+                                <div class="small">Mission Control</div>
                             </div>
                         </div>
                     </div>
-                    <div class="col-lg-4 col-xs-4">
+                    <div class="col-lg-2 col-xs-6">
                         <div class="panel panel-filled">
                             <div class="panel-body">
-                                <h2 class="m-b-none">0 <span class="slight">of 0</span></h2>
-                                <div class="small">Total fallen nodes</div>
+                                <h2 class="m-b-none">
+                                    <i class="pe pe-7s-chat text-warning"></i> {{ 'Ok' if health['mission_control_channel'] else 'X' }}</h2>
+                                <div class="small">Mission Control Channel</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-2 col-xs-6">
+                        <div class="panel panel-filled">
+                            <div class="panel-body">
+                                <h2 class="m-b-none">
+                                    <i class="pe pe-7s-keypad text-warning"></i> {{ len(health['scope']['nodes']['alive']) }} / {{ len(health['scope']['nodes']['fallen']) }}</h2>
+                                <div class="small">Alive / Fallen Nodes</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% set uptime = scope.application.uptime()['uptime']['uptime']['info'] %}
+                    <div class="col-lg-4 col-xs-12">
+                        <div class="panel panel-filled">
+                            <div class="panel-body">
+                                <h2 class="m-b-none">
+                                    <i class="pe pe-7s-stopwatch text-warning"></i> {{uptime['days']}}d {{uptime['hours']}}h {{uptime['minutes']}}m {{uptime['seconds']}}s</h2>
+                                <div class="small">Server Uptime</div>
                             </div>
                         </div>
                     </div>
@@ -113,22 +126,19 @@
                         <div class="panel">
                             <div class="panel-body">
                                 <div class="table-responsive">
-                                    <table  class="table">
+                                    <table id="alive_table" class="table display" cellspacing="0" width="100%">
                                         <thead>
                                             <tr>
-                                                <th width="30%">Name</th>
-                                                <th width="10%">IP</th>
-                                                <th width="10%">Port</th>
-                                                <th width="10%">Lock</th>
-                                                <th width="20%">Uptime</th>
-                                                <th width="10%">Health</th>
+                                                <th>Name</th>
+                                                <th>Node</th>
+                                                <th>IP</th>
+                                                <th>Port</th>
+                                                <th>Lock</th>
+                                                <th>Health</th>
+                                                <th>Uptime</th>
                                             </tr>
                                         </thead>
-                                        <tbody id="table-body">
-                                            <tr id="table-loading">
-                                                <td>loading data...</td>
-                                            </tr>
-                                        </tbody>
+                                        <tbody></tbody>
                                     </table>
                                 </div>
                             </div>
@@ -144,45 +154,37 @@
     <script src="{{static_url('vendor/pacejs/pace.min.js')}}"></script>
     <script src="{{static_url('vendor/jquery/jquery-2.2.3.min.js')}}"></script>
     <script src="{{static_url('vendor/bootstrap/js/bootstrap.min.js')}}"></script>
+    <script src="{{static_url('vendor/datatables/datatables.min.js')}}"></script>
     <script src="{{static_url('js/luna.js')}}"></script>
 
     <script>
         $(document).ready(function(){
-            var key, nodes, node, uptime;
-            var _tbody = $('#table-body');
-            var _tloading = $('#table-loading');
-            var _template = '<tr id="{id}"><td>{name} ({node})</td><td>{ip}</td><td>{port}</td><td>{lock}</td><td>{uptime}</td><td>{health}</td></tr>';
 
-            $.getJSON('/api/nodes/alive/health', {}, function(data){
-                _tloading.remove();
-                nodes = data.response.alive.nodes;
-                console.log(nodes)
-                for(key in data.response.alive.nodes){
-                    node = nodes[key];
-                    uptime = node.health.details.uptime.uptime.info;
-                    _tbody.append(
-                        _template.replace('{id}', key)
-                            .replace('{name}', node.name)
-                            .replace('{node}', node.node)
-                            .replace('{ip}', node.ip)
-                            .replace('{port}', node.port)
-                            .replace('{lock}', node.lock)
-                            .replace('{uptime}',
-                                    '{days}d {hours}h {minutes}m {seconds}s'
-                                            .replace('{days}', uptime.days)
-                                            .replace('{hours}', uptime.hours)
-                                            .replace('{minutes}', uptime.minutes)
-                                            .replace('{seconds}', uptime.seconds)
-                            )
-                            .replace('{health}', node.health.status)
-                    )
-                }
+            var alive_table = $('#alive_table').DataTable({
+                'ajax': {
+                    'url': '/api/nodes/alive/health',
+                    'dataSrc': 'response.alive.nodes'
+                },
+                'columns': [
+                    {'data': 'name'},
+                    {'data': 'node'},
+                    {'data': 'ip'},
+                    {'data': 'port'},
+                    {'data': 'lock'},
+                    {'data': 'health.status'},
+                    {
+                        'data': 'health.details.uptime.uptime.info',
+                        'render': function(data, type, full, meta){
+                            try {
+                                return format('{days}d {hours}h {minutes}m {seconds}s', data);
+                            }catch (e){
+                                return '-';
+                            }
+
+                        }
+                    }
+                ]
             });
-
-            $.getJSON('/api/nodes', {}, function(data){
-
-            });
-
 
         });
     </script>
