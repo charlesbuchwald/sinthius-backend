@@ -93,6 +93,11 @@ class NodesHandler(WebSocketApiHandler):
         }, sort_keys=True)
 
 
+class NodesCacheHandler(WebSocketApiHandler):
+    def get(self, *args, **kwargs):
+        self.success(self.application.nodes.values())
+
+
 class NodesAliveHandler(WebSocketApiHandler):
     def get(self, *args, **kwargs):
         alive = self.application.n_alive()
@@ -106,7 +111,6 @@ class NodesAliveHealthHandler(WebSocketApiHandler):
     def get(self, *args, **kwargs):
         try:
             nodes = self.application.n_alive()
-            # alive = {}
             alive = []
             for item in sorted(nodes):
                 node = self.application.nodes[item]
@@ -114,8 +118,6 @@ class NodesAliveHealthHandler(WebSocketApiHandler):
                 response = yield _fetch(url)
                 if isinstance(response, httpclient.HTTPResponse):
                     if response.code == 200:
-                        # alive[item] = \
-                        #     self.json_loads(response.body).get('response')
                         alive.append(
                             self.json_loads(response.body).get('response'))
             self.success({
@@ -180,6 +182,7 @@ handlers_list = [
     (r'/api/node/lock/?', NodeLockHandler),
     (r'/api/node/unlock/?', NodeUnlockHandler),
     (r'/api/nodes/?', NodesHandler),
+    (r'/api/nodes/cache/?', NodesCacheHandler),
     (r'/api/nodes/alive/?', NodesAliveHandler),
     (r'/api/nodes/alive/health/?', NodesAliveHealthHandler),
     (r'/api/nodes/fallen/?', NodesFallenHandler),

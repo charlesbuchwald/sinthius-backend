@@ -26,6 +26,7 @@ APPLICATION = 'sinthius_octopus.backend.base.SocketApplication'
 PULL_DELAY = 5  # in seconds
 PULL_RECONNECT_DELAY = 2  # in seconds
 PULL_CHECK_TIMES = 2
+FRONTEND_PATH = '{src}/frontend'
 
 HANDLERS = (
     'sinthius_octopus.backend.mission_control',

@@ -461,6 +461,16 @@ class SocketApplication(ServerApplication):
                           else jsondumps(self.nodes, indent=2))
         raise gen.Return(True)
 
+    @gen.coroutine
+    def remove_fallen_nodes(self, **kwargs):
+        global _FALLEN_NODES
+        nodes = list(self.fallen_nodes)
+        if self._SHUTTING_DOWN is False:
+            for node in self.fallen_nodes:
+                yield gen.Task(self.publisher.delete, node)
+            self.fallen_nodes.clear()
+        raise gen.Return(nodes)
+
     # Connection
 
     @gen.coroutine
@@ -575,6 +585,10 @@ class SocketApplication(ServerApplication):
         response.update(self.uptime())
         return result, {'status': result, 'details': response}
 
+    def frontend_repository(self):
+        path = str(self.settings['frontend_path'])
+        return path.format(**self.settings.get('paths', {}))
+
 
 class Struct(object):
     def __init__(self, values):
@@ -670,6 +684,7 @@ class ResourceMixin(ConnectorsMixin):
     def get_objects(self, **kwargs):
         response = yield gen.Task(self.object.fetch, **kwargs)
         raise gen.Return(ObjectStorage(response))
+
 
 
 class WebSocketHandler(ResourceMixin, BaseWebSocketHandler):

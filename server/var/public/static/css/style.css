@@ -950,7 +950,7 @@ body {
 
 .content {
     margin-top: 60px;
-    margin-left: 200px;
+    /*margin-left: 200px;*/
     position: relative;
     padding: 30px;
     transition: margin-left 0.3s ease-out;

@@ -469,7 +469,7 @@ class APIHandler(BaseHandler):
             chunk['error'] = {'message': message}
             if code is not None:
                 chunk['error']['code'] = code
-        if response:
+        if response is not None:
             chunk['response'] = response
         return chunk
 

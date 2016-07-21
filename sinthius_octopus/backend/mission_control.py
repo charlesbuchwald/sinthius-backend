@@ -6,6 +6,7 @@
 # Created: 09/Jul/2016 00:13
 # ~
 
+import git
 import collections
 from sinthius.conf import settings as global_settings
 from sinthius.web.base import BaseHandler
@@ -25,6 +26,33 @@ class MissionControlHandler(BaseHandler):
 class MissionControlAPIHandler(WebSocketApiHandler):
     def get(self, *args, **kwargs):
         self.success('ok')
+
+
+class MissionControlAPIGitHandler(WebSocketApiHandler):
+    def get(self, action, *args, **kwargs):
+        message = None
+        repo = git.Repo(self.application.frontend_repository())
+        if action == 'status':
+            message = repo.git.status('-s').split('\n')
+        elif action == 'fetch':
+            try:
+                message = repo.git.fetch()
+            except Exception, e:
+                message = e.__str__()
+        elif action == 'pull':
+            try:
+                repo.git.fetch()
+                message = repo.git.pull()
+            except Exception, e:
+                message = e.__str__()
+        self.success({'action': action, 'message': message})
+
+
+class MissionControlAPIRemoveFallenHandler(WebSocketApiHandler):
+    @gen.coroutine
+    def get(self, *args, **kwargs):
+        response = yield self.application.remove_fallen_nodes()
+        self.success(response)
 
 
 class MissionControlObserverHandler(WebSocketHandler):
@@ -51,6 +79,10 @@ if global_settings.MASTER is True:
     handlers_list.extend([
         (r'/a/mc/?', MissionControlHandler),
         (r'/a/mc/api/?', MissionControlAPIHandler),
+        (r'/a/mc/api/git/(fetch|pull|status)/?', MissionControlAPIGitHandler),
+        (r'/a/mc/api/update/?', None),
+        (r'/a/mc/api/upgrade/?', None),
+        (r'/a/mc/api/remove/fallen/?', MissionControlAPIRemoveFallenHandler),
         (r'/a/mc/observer/?', MissionControlObserverHandler)
     ])
 
