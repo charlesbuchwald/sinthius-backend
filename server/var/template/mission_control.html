@@ -14,9 +14,6 @@
     <link rel="stylesheet" href="{{static_url('css/pe-icons/helper.css')}}">
     <link rel="stylesheet" href="{{static_url('css/stroke-icons/style.css')}}">
     <link rel="stylesheet" href="{{static_url('css/style.css')}}">
-
-    <!-- TODO(berna): change -->
-    <meta http-equiv="Refresh" content="60">
 </head>
 <body>
 
@@ -36,56 +33,27 @@
 
         <section class="content">
             <div class="container-fluid">
+
                 <div class="row">
-                    {% set health = scope.application.health()[1]['details'] %}
-                    <div class="col-lg-2 col-xs-6">
-                        <div class="panel panel-filled">
-                            <div class="panel-body">
-                                <h2 class="m-b-none">
-                                    <i class="pe pe-7s-signal text-warning"></i> {{ 'Ok' if health['publisher'] else 'X' }}</h2>
-                                <div class="small">Publisher</div>
+                    <div class="col-lg-12">
+                        <div class="view-header">
+                            <div class="header-icon">
+                                <i class="pe page-header-icon pe-7s-rocket"></i>
+                            </div>
+                            <div class="header-title">
+                                <h3 class="m-b-xs">Mission Control</h3>
+                                <small>Dashboard and health information</small>
                             </div>
                         </div>
+                        <hr>
                     </div>
-                    <div class="col-lg-2 col-xs-6">
-                        <div class="panel panel-filled">
-                            <div class="panel-body">
-                                <h2 class="m-b-none">
-                                    <i class="pe pe-7s-signal text-warning"></i> {{ 'Ok' if health['mission_control'] else 'X' }}</h2>
-                                <div class="small">Mission Control</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-2 col-xs-6">
-                        <div class="panel panel-filled">
-                            <div class="panel-body">
-                                <h2 class="m-b-none">
-                                    <i class="pe pe-7s-chat text-warning"></i> {{ 'Ok' if health['mission_control_channel'] else 'X' }}</h2>
-                                <div class="small">Channel</div>
-                            </div>
-                        </div>
-                    </div>
+                </div>
 
-                    <div class="col-lg-2 col-xs-6">
-                        <div class="panel panel-filled">
-                            <div class="panel-body">
-                                <h2 class="m-b-none">
-                                    <i class="pe pe-7s-keypad text-warning"></i> {{ len(health['scope']['nodes']['alive']) }} / {{ len(health['scope']['nodes']['fallen']) }}</h2>
-                                <div class="small">Alive / Fallen Nodes</div>
-                            </div>
-                        </div>
-                    </div>
 
-                    {% set uptime = scope.application.uptime()['uptime']['uptime']['info'] %}
-                    <div class="col-lg-4 col-xs-12">
-                        <div class="panel panel-filled">
-                            <div class="panel-body">
-                                <h2 class="m-b-none">
-                                    <i class="pe pe-7s-stopwatch text-warning"></i> {{uptime['days']}}d {{uptime['hours']}}h {{uptime['minutes']}}m {{uptime['seconds']}}s</h2>
-                                <div class="small">Server Uptime</div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="row" id="mission-control">
+
+
+
                 </div>
 
                 <div class="row">
@@ -187,7 +155,7 @@
                                 Update themes on all nodes
                             </div>
                             <div class="panel-body">
-                                <p>This action updates all nodes with new content.</p>
+                                <p>This action updates all nodes with the new content.</p>
                                 <button id="btnUpdate" class="btn btn-info" type="button">
                                     <span class="bold">Update</span>
                                 </button>
@@ -201,7 +169,7 @@
                                 Upgrade themes on all nodes
                             </div>
                             <div class="panel-body">
-                                <p>This action updates all nodes with new content and will try to restart.</p>
+                                <p>This action updates all nodes with the new content and will try to restart.</p>
                                 <button id="btnUpgrade" class="btn btn-info" type="button">
                                     <span class="bold">Upgrade</span>
                                 </button>
@@ -254,6 +222,76 @@
     <script>
         $(document).ready(function(){
 
+            var _item_value = ''
+                + '<div class="col-xs-6 col-md-4">'
+                + '    <div class="panel panel-filled">'
+                + '        <div class="panel-body">'
+                + '            <h2 class="m-b-none server2">{value}</h2>'
+                + '            <div class="small">{description}</div>'
+                + '        </div>'
+                + '    </div>'
+                + '</div>';
+
+            var _item_update = ''
+                + '<div class="col-xs-12 col-md-12 col-lg-12">'
+                + '<div class="panel panel-filled panel-c-info">'
+                + '<div class="panel-body">'
+                + '<i class="fa fa-clock-o"></i>&nbsp;Updated:&nbsp;<span class="c-white time">{time}</span>'
+                + '</div>'
+                + '</div>'
+                + '</div>';
+
+            var _mission_control = $('#mission-control');
+
+            var _mission_control_items = {
+                'uptime': {'key': 'health.details.uptime.uptime.info', 'description': 'Up Time'},
+                'health': {'key': 'health.status', 'description': 'Health Status'},
+                'publisher': {'key': 'health.details.publisher', 'description': 'Publisher Status'},
+                'mission_control': {'key': 'health.details.mission_control', 'description': 'Mission Control Status'},
+                'mission_control_channel': {'key': 'health.details.mission_control_channel', 'description': 'Mission Control Channel'},
+                'alive_nodes': {'key': 'health.details.scope.nodes.alive', 'description': 'Alive Nodes'},
+                'fallen_nodes': {'key': 'health.details.scope.nodes.fallen', 'description': 'Fallen Nodes'},
+                'lock': {'key': 'lock', 'description': 'Lock Status'},
+                'hash': {'key': 'hash', 'description': 'Node Hash'},
+                'node': {'key': 'node', 'description': 'Node Name'},
+                'ip': {'key': 'ip', 'description': 'IP Address'},
+                'port': {'key': 'port', 'description': 'Port Number'}
+            };
+
+            function _get(obj, path){try{return eval("obj."+path);} catch(e) {return undefined;}}
+
+            var mission_control_updater = function(){
+                try {
+                    $.getJSON('/api/node/health', {}, function(r){
+                        _mission_control.empty();
+
+
+                        var key, value, content, data = r.response;
+                        for(key in _mission_control_items){
+                            value = _mission_control_items[key];
+                            content = _get(data, value.key);
+                            if(key.search(/(fallen|alive)_nodes/i) > -1) {
+                                content = content.length;
+                            }else if(key.search(/uptime/i) > -1) {
+                                content = format('{days}d {hours}h {minutes}m {seconds}s', content);
+                            }else if(key.search(/hash/i) > -1) {
+                                content = content.substring(0, 8);
+                            }
+                            _mission_control.append(format(_item_value, {
+                                'value': content,
+                                'description': value.description
+                            }));
+                        }
+
+                        _mission_control.append(format(_item_update, {'time': new Date().toISOString()}));
+
+                    });
+                } catch (e) {}
+                setTimeout(mission_control_updater, 5000);
+            };
+
+            mission_control_updater();
+
             var alive_table = $('#alive_table').DataTable({
                 'ajax': {
                     'url': '/api/nodes/alive/health',
@@ -280,6 +318,8 @@
                 ]
             });
 
+            setInterval(function(){alive_table.ajax.reload()}, 10000);
+
             var nodes_table = $('#nodes_table').DataTable({
                 'ajax': {
                     'url': '/api/nodes/cache',
@@ -292,6 +332,8 @@
                     {'data': 'port'}
                 ]
             });
+
+            setInterval(function(){nodes_table.ajax.reload()}, 10000);
 
             $('#btnUpdate').on('click', function(event){
                 event.preventDefault();
