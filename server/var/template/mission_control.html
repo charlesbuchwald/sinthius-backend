@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="{{static_url('vendor/font-awesome/css/font-awesome.min.css')}}">
     <link rel="stylesheet" href="{{static_url('vendor/ionicons/css/ionicons.min.css')}}">
     <link rel="stylesheet" href="{{static_url('vendor/datatables/datatables.min.css')}}">
+    <link rel="stylesheet" href="{{static_url('vendor/toastr/toastr.min.css')}}">
     <link rel="stylesheet" href="{{static_url('css/pe-icons/pe-icon-7-stroke.css')}}">
     <link rel="stylesheet" href="{{static_url('css/pe-icons/helper.css')}}">
     <link rel="stylesheet" href="{{static_url('css/stroke-icons/style.css')}}">
@@ -32,6 +33,9 @@
         </nav>
 
         <section class="content">
+
+            <div class="container-fluid" id="news"></div>
+
             <div class="container-fluid">
 
                 <div class="row">
@@ -129,6 +133,11 @@
                                     </table>
                                 </div>
                             </div>
+                            <div class="panel-footer">
+                                <button id="btnRemoveFallenNodes" class="btn btn-danger" type="button">
+                                    <span class="bold">Remove all fallen nodes</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -149,8 +158,8 @@
                 </div>
 
                 <div class="row">
-                    <div class="col-xs-6 col-lg-6">
-                        <div class="panel panel-c-info">
+                    <div class="col-xs-6 col-md-4">
+                        <div class="panel">
                             <div class="panel-heading">
                                 Update themes on all nodes
                             </div>
@@ -162,9 +171,8 @@
                             </div>
                         </div>
                     </div>
-
-                    <div class="col-xs-6 col-lg-6">
-                        <div class="panel panel-c-info">
+                    <div class="col-xs-6 col-md-4">
+                        <div class="panel">
                             <div class="panel-heading">
                                 Upgrade themes on all nodes
                             </div>
@@ -176,9 +184,8 @@
                             </div>
                         </div>
                     </div>
-
-                    <div class="col-xs-6 col-lg-6">
-                        <div class="panel panel-c-info">
+                    <div class="col-xs-6 col-md-4">
+                        <div class="panel">
                             <div class="panel-heading">
                                 Update repository themes
                             </div>
@@ -190,23 +197,7 @@
                             </div>
                         </div>
                     </div>
-
-                    <div class="col-xs-6 col-lg-6">
-                        <div class="panel panel-c-warning">
-                            <div class="panel-heading">
-                                Remove all fallen nodes
-                            </div>
-                            <div class="panel-body">
-                                <p>This action will remove all registered fallen nodes.</p>
-                                <button id="btnRemoveFallenNodes" class="btn btn-warning" type="button">
-                                    <span class="bold">Remove</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
                 </div>
-
             </div>
         </section>
     </div>
@@ -217,10 +208,19 @@
     <script src="{{static_url('vendor/jquery/jquery-2.2.3.min.js')}}"></script>
     <script src="{{static_url('vendor/bootstrap/js/bootstrap.min.js')}}"></script>
     <script src="{{static_url('vendor/datatables/datatables.min.js')}}"></script>
+    <script src="{{static_url('vendor/toastr/toastr.min.js')}}"></script>
     <script src="{{static_url('js/luna.js')}}"></script>
 
     <script>
         $(document).ready(function(){
+
+            toastr.options = {
+                "debug": false,
+                "newestOnTop": false,
+                "positionClass": "toast-bottom-right",
+                "closeButton": true,
+                "progressBar": true
+            };
 
             var _item_value = ''
                 + '<div class="col-xs-6 col-md-4">'
@@ -264,8 +264,6 @@
                 try {
                     $.getJSON('/api/node/health', {}, function(r){
                         _mission_control.empty();
-
-
                         var key, value, content, data = r.response;
                         for(key in _mission_control_items){
                             value = _mission_control_items[key];
@@ -282,15 +280,38 @@
                                 'description': value.description
                             }));
                         }
-
                         _mission_control.append(format(_item_update, {'time': new Date().toISOString()}));
-
                     });
                 } catch (e) {}
                 setTimeout(mission_control_updater, 5000);
             };
 
             mission_control_updater();
+
+            var _alert_temaplte = ''
+                + '<div class="alert alert-{type} alert-dismissible fade in" role="alert">'
+                + '    <button type="button" class="close" data-dismiss="alert" aria-label="Close">'
+                + '        <span aria-hidden="true">×</span>'
+                + '    </button>'
+                + '    {message}'
+                + '</div>';
+
+            var _news = $('#news');
+
+            var mission_control_check_update = function(){
+                try {
+                    $.getJSON('/a/mc/api/git/status', {}, function(r){
+                        if($.isArray(r.response.message)){
+                            _news.append(format(_alert_temaplte, {
+                                'type': 'success',
+                                'message': format('<h4>Update Available...</h4><pre>{}</pre>', r.response.message.join('\n'))
+                            }))
+                        }
+                    });
+                } catch (e) {}
+            };
+
+            mission_control_check_update();
 
             var alive_table = $('#alive_table').DataTable({
                 'ajax': {
@@ -335,25 +356,25 @@
 
             setInterval(function(){nodes_table.ajax.reload()}, 10000);
 
-            $('#btnUpdate').on('click', function(event){
-                event.preventDefault();
-                $.getJSON('/a/mc/api/update', {}, function(r){});
-            });
-
-            $('#btnUpgrade').on('click', function(event){
-                event.preventDefault();
-                $.getJSON('/a/mc/api/upgrade', {}, function(r){});
-            });
-
-            $('#btnUpdateRepository').on('click', function(event){
-                event.preventDefault();
-                $.getJSON('/a/mc/api/git/pull', {}, function(r){});
-            });
-
-            $('#btnRemoveFallenNodes').on('click', function(event){
-                event.preventDefault();
-                $.getJSON('/a/mc/api/remove/fallen', {}, function(r){});
-            });
+//            $('#btnUpdate').on('click', function(event){
+//                event.preventDefault();
+//                $.getJSON('/a/mc/api/update', {}, function(r){});
+//            });
+//
+//            $('#btnUpgrade').on('click', function(event){
+//                event.preventDefault();
+//                $.getJSON('/a/mc/api/upgrade', {}, function(r){});
+//            });
+//
+//            $('#btnUpdateRepository').on('click', function(event){
+//                event.preventDefault();
+//                $.getJSON('/a/mc/api/git/pull', {}, function(r){});
+//            });
+//
+//            $('#btnRemoveFallenNodes').on('click', function(event){
+//                event.preventDefault();
+//                $.getJSON('/a/mc/api/remove/fallen', {}, function(r){});
+//            });
 
         });
     </script>
