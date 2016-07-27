@@ -144,6 +144,7 @@ class SocketApplication(ServerApplication):
                 'name': self.n_name()
             }
         self._node_info['lock'] = self._node_lock
+        self._node_info['update'] = None
         return self._node_info
 
     # Node
@@ -204,8 +205,11 @@ class SocketApplication(ServerApplication):
     # Publish
 
     @gen.coroutine
-    def commit(self, action='UPDATE', **kwargs):
-        data = dict(node_id=self.node_id, action=action, node=self.node_info)
+    def commit(self, action='NONE', **kwargs):
+        data = dict(action=action)
+        if not action.startswith('SYS_'):
+            data['node_id'] = self.node_id
+            data['node'] = self.node_info
         data.update(kwargs)
         if 'callback' in data:
             del data['callback']
@@ -337,8 +341,15 @@ class SocketApplication(ServerApplication):
     def _on_subscribe(self, message):
         if message.kind == 'message':
             _body, body = strucloads(message.body)
-            if body.node_id != self.node_id:
-                if body.action in ('SUBSCRIBE', 'UPDATE'):
+            if body.action.startswith('SYS_'):
+                self._stop_pull()
+                if body.action == 'SYS_UPDATE':
+                    pass
+                elif body.action == 'SYS_UPGRADE':
+                    pass
+                logging.warn(' >> (%s)', body.action)
+            elif body.node_id != self.node_id:
+                if body.action == 'SUBSCRIBE':
                     value = yield gen.Task(self.publisher.get, body.node_id)
                     self.nodes[body.node_id] = jsonloads(value)
                 elif body.action == 'UNSUBSCRIBE' \

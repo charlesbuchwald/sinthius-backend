@@ -53,12 +53,7 @@
                     </div>
                 </div>
 
-
-                <div class="row" id="mission-control">
-
-
-
-                </div>
+                <div class="row" id="mission-control"></div>
 
                 <div class="row">
                     <div class="col-lg-12">
@@ -190,9 +185,9 @@
                                 Update repository themes
                             </div>
                             <div class="panel-body">
-                                <p>This action updates the local repository.</p>
+                                <p>This action updates the local repository <code>(git add . && git commit -m 'LOCAL UPDATE')</code>.</p>
                                 <button id="btnUpdateRepository" class="btn btn-info" type="button">
-                                    <span class="bold">Pull</span>
+                                    <span class="bold">Update</span>
                                 </button>
                             </div>
                         </div>
@@ -301,7 +296,7 @@
             var mission_control_check_update = function(){
                 try {
                     $.getJSON('/a/mc/api/git/status', {}, function(r){
-                        if($.isArray(r.response.message)){
+                        if($.isArray(r.response.message) && r.response.message.length() > 0){
                             _news.append(format(_alert_temaplte, {
                                 'type': 'success',
                                 'message': format('<h4>Update Available...</h4><pre>{}</pre>', r.response.message.join('\n'))
@@ -356,25 +351,38 @@
 
             setInterval(function(){nodes_table.ajax.reload()}, 10000);
 
-//            $('#btnUpdate').on('click', function(event){
-//                event.preventDefault();
-//                $.getJSON('/a/mc/api/update', {}, function(r){});
-//            });
-//
-//            $('#btnUpgrade').on('click', function(event){
-//                event.preventDefault();
-//                $.getJSON('/a/mc/api/upgrade', {}, function(r){});
-//            });
-//
-//            $('#btnUpdateRepository').on('click', function(event){
-//                event.preventDefault();
-//                $.getJSON('/a/mc/api/git/pull', {}, function(r){});
-//            });
-//
-//            $('#btnRemoveFallenNodes').on('click', function(event){
-//                event.preventDefault();
-//                $.getJSON('/a/mc/api/remove/fallen', {}, function(r){});
-//            });
+            $('#btnUpdate').on('click', function(event){
+                event.preventDefault();
+                $.getJSON('/a/mc/api/update', {}, function(r){
+                    toastr.info(format('<h4>Update:</h4><p>{}</p>', r.response.message));
+                });
+            });
+
+            $('#btnUpgrade').on('click', function(event){
+                event.preventDefault();
+                $.getJSON('/a/mc/api/upgrade', {}, function(r){
+                    toastr.info(format('<h4>Upgrade:</h4><p>{}</p>', r.response.message));
+                });
+            });
+
+            $('#btnUpdateRepository').on('click', function(event){
+                event.preventDefault();
+                $.getJSON('/a/mc/api/git/update', {}, function(r){
+                    toastr.info(format('<h4>Update Repository:</h4><p>{}</p>', r.response.message));
+                });
+            });
+
+            $('#btnRemoveFallenNodes').on('click', function(event){
+                event.preventDefault();
+                $.getJSON('/a/mc/api/remove/fallen', {}, function(r){
+                    if(r.response.length > 0){
+                        var message = format('<h4>Fallen Nodes:</h4><pre>{}</pre>', r.response.join('\n'));
+                        toastr.success(message);
+                    }else{
+                        toastr.warning('<h4>Fallen Nodes:</h4><p>not found</p>');
+                    }
+                });
+            });
 
         });
     </script>

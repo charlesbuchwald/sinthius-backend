@@ -31,7 +31,8 @@ class MissionControlAPIHandler(WebSocketApiHandler):
 class MissionControlAPIGitHandler(WebSocketApiHandler):
     def get(self, action, *args, **kwargs):
         message = None
-        repo = git.Repo(self.application.frontend_repository())
+        PATH = self.application.frontend_repository()
+        repo = git.Repo(PATH)
         if action == 'status':
             message = repo.git.status('-s').split('\n')
         elif action == 'fetch':
@@ -45,7 +46,22 @@ class MissionControlAPIGitHandler(WebSocketApiHandler):
                 message = repo.git.pull()
             except Exception, e:
                 message = e.__str__()
+        elif action == 'update':
+            try:
+                import subprocess
+                subprocess\
+                    .call(['git', 'add', '.'], cwd=PATH)
+                subprocess\
+                    .call(['git', 'commit', '-m', 'LOCAL UPDATE'], cwd=PATH)
+                message = 'Success'
+            except Exception, e:
+                message = e.__str__()
         self.success({'action': action, 'message': message})
+
+
+class MissionControlAPIUpdateHandler(WebSocketApiHandler):
+    def get(self, action, *args, **kwargs):
+        self.application.commit('sys_{}'.format(action).upper())
 
 
 class MissionControlAPIRemoveFallenHandler(WebSocketApiHandler):
@@ -79,9 +95,9 @@ if global_settings.MASTER is True:
     handlers_list.extend([
         (r'/a/mc/?', MissionControlHandler),
         (r'/a/mc/api/?', MissionControlAPIHandler),
-        (r'/a/mc/api/git/(fetch|pull|status)/?', MissionControlAPIGitHandler),
-        (r'/a/mc/api/update/?', None),
-        (r'/a/mc/api/upgrade/?', None),
+        (r'/a/mc/api/git/(fetch|pull|update|status)/?',
+         MissionControlAPIGitHandler),
+        (r'/a/mc/api/(update|upgrade)/?', MissionControlAPIUpdateHandler),
         (r'/a/mc/api/remove/fallen/?', MissionControlAPIRemoveFallenHandler),
         (r'/a/mc/observer/?', MissionControlObserverHandler)
     ])
