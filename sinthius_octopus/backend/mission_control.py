@@ -6,11 +6,11 @@
 # Created: 09/Jul/2016 00:13
 # ~
 
-import git
 import collections
 from sinthius.conf import settings as global_settings
 from sinthius.web.base import BaseHandler
-from sinthius_octopus.backend.base import WebSocketHandler, WebSocketApiHandler
+from sinthius_octopus.backend.base import WebSocketHandler, \
+    WebSocketApiHandler, git_commit, git_fetch, git_pull, git_status, git_log
 from tornado import gen
 
 handlers_list = []
@@ -29,39 +29,33 @@ class MissionControlAPIHandler(WebSocketApiHandler):
 
 
 class MissionControlAPIGitHandler(WebSocketApiHandler):
+    @gen.coroutine
     def get(self, action, *args, **kwargs):
-        message = None
-        PATH = self.application.frontend_repository()
-        repo = git.Repo(PATH)
-        if action == 'status':
-            message = repo.git.status('-s').split('\n')
-        elif action == 'fetch':
-            try:
-                message = repo.git.fetch()
-            except Exception, e:
-                message = e.__str__()
-        elif action == 'pull':
-            try:
-                repo.git.fetch()
-                message = repo.git.pull()
-            except Exception, e:
-                message = e.__str__()
-        elif action == 'update':
-            try:
-                import subprocess
-                subprocess\
-                    .call(['git', 'add', '.'], cwd=PATH)
-                subprocess\
-                    .call(['git', 'commit', '-m', 'LOCAL UPDATE'], cwd=PATH)
-                message = 'Success'
-            except Exception, e:
-                message = e.__str__()
-        self.success({'action': action, 'message': message})
+        message, error = None, None
+        _repo = self.application.frontend_repository()
+        try:
+            if action == 'log':
+                git_function = git_log
+            elif action == 'fetch':
+                git_function = git_fetch
+            elif action == 'pull':
+                git_function = git_pull
+            elif action == 'update':
+                git_function = git_commit
+            else:
+                git_function = git_status
+            message, error = yield git_function(_repo)
+        except Exception, e:
+            message = e.__str__()
+        self.success({'action': action, 'message': message, 'error': error})
 
 
 class MissionControlAPIUpdateHandler(WebSocketApiHandler):
+    @gen.coroutine
     def get(self, action, *args, **kwargs):
-        self.application.commit('sys_{}'.format(action).upper())
+        response = \
+            yield self.application.commit('sys_{}'.format(action).upper())
+        self.success(response)
 
 
 class MissionControlAPIRemoveFallenHandler(WebSocketApiHandler):
@@ -95,7 +89,7 @@ if global_settings.MASTER is True:
     handlers_list.extend([
         (r'/a/mc/?', MissionControlHandler),
         (r'/a/mc/api/?', MissionControlAPIHandler),
-        (r'/a/mc/api/git/(fetch|pull|update|status)/?',
+        (r'/a/mc/api/git/(fetch|pull|update|status|log)/?',
          MissionControlAPIGitHandler),
         (r'/a/mc/api/(update|upgrade)/?', MissionControlAPIUpdateHandler),
         (r'/a/mc/api/remove/fallen/?', MissionControlAPIRemoveFallenHandler),

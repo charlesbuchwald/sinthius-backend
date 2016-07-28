@@ -31,6 +31,7 @@ import re
 import socket
 import hashlib
 import logging
+import subprocess
 import collections
 from copy import deepcopy
 from sinthius.conf import settings as global_settings
@@ -44,7 +45,7 @@ from sinthius.web.application import ServerApplication
 from sinthius_octopus.backend.scheme import api_reset
 from functools import partial
 from datetime import timedelta
-from tornado import gen, web, ioloop, httpclient
+from tornado import gen, web, ioloop, httpclient, process
 from tornadoredis import ConnectionError
 
 _RESOURCES = {}
@@ -58,6 +59,7 @@ _MISSION_CONTROL = None
 _PULL = None
 _PULL_COUNTER = None
 API, API_METHODS = api_reset()
+STREAM = process.Subprocess.STREAM
 
 rx_node = re.compile(r'^node:(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}'
                      r'(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?):[0-9]{4}$')
@@ -65,6 +67,63 @@ rx_node = re.compile(r'^node:(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}'
 
 def get_local_ip():
     return socket.gethostbyname(socket.gethostname())
+
+
+@gen.coroutine
+def call_subprocess(cmd, stdin_data=None, stdin_async=True, **kwargs):
+    stdin = STREAM if stdin_async else subprocess.PIPE
+    _subprocess = process\
+        .Subprocess(cmd, stdin=stdin, stdout=STREAM, stderr=STREAM, **kwargs)
+    if stdin_data:
+        if stdin_async:
+            yield gen.Task(_subprocess.stdin.write, stdin_data)
+        else:
+            _subprocess.stdin.write(stdin_data)
+    if stdin_async or stdin_data:
+        _subprocess.stdin.close()
+    result, error = yield [
+        gen.Task(_subprocess.stdout.read_until_close),
+        gen.Task(_subprocess.stderr.read_until_close)
+    ]
+    raise gen.Return((result, error))
+
+
+@gen.coroutine
+def git_status(repo):
+    result, error = yield call_subprocess(['git', 'status', '-s'], cwd=repo)
+    raise gen.Return((result, error))
+
+
+@gen.coroutine
+def git_log(repo,):
+    cmd = ['git', 'log', '--graph', '--decorate', '--pretty=oneline',
+           '--abbrev-commit']
+    result, error = yield call_subprocess(cmd, cwd=repo)
+    raise gen.Return((result, error))
+
+
+@gen.coroutine
+def git_fetch(repo):
+    result, error = \
+        yield call_subprocess(['git', 'fetch', 'origin/master'], cwd=repo)
+    raise gen.Return((result, error))
+
+
+@gen.coroutine
+def git_pull(repo, fetch=True):
+    if fetch is True:
+        yield call_subprocess(['git', 'fetch', 'origin/master'], cwd=repo)
+    result, error = \
+        yield call_subprocess(['git', 'pull', 'origin/master'], cwd=repo)
+    raise gen.Return((result, error))
+
+
+@gen.coroutine
+def git_commit(repo, message='LOCAL UPDATE'):
+    yield call_subprocess(['git', 'add', '.'], cwd=repo)
+    result, error = \
+        yield call_subprocess(['git', 'commit', '-m', message], cwd=repo)
+    raise gen.Return((result, error))
 
 
 class SocketApplication(ServerApplication):
