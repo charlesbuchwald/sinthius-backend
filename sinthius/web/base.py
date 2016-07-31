@@ -532,11 +532,10 @@ class APINotFoundHandler(APIHandler):
 
 class PingHandler(APIHandler):
     def get(self, *args, **kwargs):
-        self.normalize_response(SUCCESS_CODE, response=settings.PING_RESPONSE)
+        self.plain_text_response(settings.PING_RESPONSE)
 
 
 class StatsHandler(APIHandler):
-    # TODO(berna): I need to write a handler that check server health.-
     def get(self, *args, **kwargs):
         chunk = self.json_dumps(self.application.stats(), sort_keys=True)
         self.json_response(chunk)

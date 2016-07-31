@@ -179,6 +179,8 @@ class SocketApplication(ServerApplication):
     _node_info = None
     _node_hash = None
     _node_lock = False
+    _node_update = None
+    _node_upgrade = None
 
     @property
     def node_id(self):
@@ -200,10 +202,12 @@ class SocketApplication(ServerApplication):
                 'port': self.n_port(),
                 'hash': self.n_hash(),
                 'mode': self.n_mode(),
-                'name': self.n_name()
+                'name': self.n_name(),
+                'priority': self.n_priority(),
             }
         self._node_info['lock'] = self._node_lock
-        self._node_info['update'] = None
+        self._node_info['update'] = self._node_update
+        self._node_info['upgrade'] = self._node_upgrade
         return self._node_info
 
     # Node
@@ -230,6 +234,9 @@ class SocketApplication(ServerApplication):
 
     def n_mode(self):
         return self.settings['nuc_mode']
+
+    def n_priority(self):
+        return self.settings['nuc_priority']
 
     def n_alive(self):
         return list(set(_NODES.keys()) ^ _FALLEN_NODES)
@@ -400,13 +407,18 @@ class SocketApplication(ServerApplication):
     def _on_subscribe(self, message):
         if message.kind == 'message':
             _body, body = strucloads(message.body)
+
             if body.action.startswith('SYS_'):
                 self._stop_pull()
+
                 if body.action == 'SYS_UPDATE':
                     pass
+
                 elif body.action == 'SYS_UPGRADE':
                     pass
+
                 logging.warn(' >> (%s)', body.action)
+
             elif body.node_id != self.node_id:
                 if body.action == 'SUBSCRIBE':
                     value = yield gen.Task(self.publisher.get, body.node_id)

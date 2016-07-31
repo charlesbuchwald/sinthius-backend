@@ -13,14 +13,15 @@ SHUTDOWN_SECONDS = 0
 
 # Nuc
 MASTER = False
-NUC_NAME = 'NUC'
-NUC_IP = '127.0.0.1'
-NUC_PORT = 4000
+NUC_NAME = None
+NUC_IP = None
+NUC_PORT = None
 NUC_MODE = 0
-NUC_DESCRIPTION = 'Nuc description here...'
+NUC_PRIORITY = 0
+NUC_DESCRIPTION = None
 
 # Server
-PORT = NUC_PORT
+PORT = 4000
 FORCE_START = True
 APPLICATION = 'sinthius_octopus.backend.base.SocketApplication'
 PULL_DELAY = 5  # in seconds
