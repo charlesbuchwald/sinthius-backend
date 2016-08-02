@@ -82,7 +82,7 @@
                                                 <th>Node</th>
                                                 <th>IP</th>
                                                 <th>Port</th>
-                                                <th>Lock</th>
+                                                <th>Locked</th>
                                                 <th>Health</th>
                                                 <th>Uptime</th>
                                             </tr>
@@ -246,7 +246,7 @@
                 'mission_control_channel': {'key': 'health.details.mission_control_channel', 'description': 'Mission Control Channel'},
                 'alive_nodes': {'key': 'health.details.scope.nodes.alive', 'description': 'Alive Nodes'},
                 'fallen_nodes': {'key': 'health.details.scope.nodes.fallen', 'description': 'Fallen Nodes'},
-                'lock': {'key': 'lock', 'description': 'Lock Status'},
+                'locked': {'key': 'locked', 'description': 'Lock Status'},
                 'hash': {'key': 'hash', 'description': 'Node Hash'},
                 'node': {'key': 'node', 'description': 'Node Name'},
                 'ip': {'key': 'ip', 'description': 'IP Address'},
@@ -318,7 +318,7 @@
                     {'data': 'node'},
                     {'data': 'ip'},
                     {'data': 'port'},
-                    {'data': 'lock'},
+                    {'data': 'locked'},
                     {'data': 'health.status'},
                     {
                         'data': 'health.details.uptime.uptime.info',

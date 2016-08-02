@@ -28,6 +28,7 @@ TODO(berna): varios...
 """
 
 import re
+import time
 import socket
 import hashlib
 import logging
@@ -105,16 +106,16 @@ def git_log(repo,):
 @gen.coroutine
 def git_fetch(repo):
     result, error = \
-        yield call_subprocess(['git', 'fetch', 'origin/master'], cwd=repo)
+        yield call_subprocess(['git', 'fetch'], cwd=repo)
     raise gen.Return((result, error))
 
 
 @gen.coroutine
 def git_pull(repo, fetch=True):
     if fetch is True:
-        yield call_subprocess(['git', 'fetch', 'origin/master'], cwd=repo)
+        yield call_subprocess(['git', 'fetch'], cwd=repo)
     result, error = \
-        yield call_subprocess(['git', 'pull', 'origin/master'], cwd=repo)
+        yield call_subprocess(['git', 'pull'], cwd=repo)
     raise gen.Return((result, error))
 
 
@@ -178,9 +179,8 @@ class SocketApplication(ServerApplication):
     _node_id = None
     _node_info = None
     _node_hash = None
-    _node_lock = False
-    _node_update = None
-    _node_upgrade = None
+    _node_locked = False
+    _node_updating = None
 
     @property
     def node_id(self):
@@ -205,9 +205,8 @@ class SocketApplication(ServerApplication):
                 'name': self.n_name(),
                 'priority': self.n_priority(),
             }
-        self._node_info['lock'] = self._node_lock
-        self._node_info['update'] = self._node_update
-        self._node_info['upgrade'] = self._node_upgrade
+        self._node_info['locked'] = self._node_locked
+        self._node_info['updating'] = self._node_updating
         return self._node_info
 
     # Node
@@ -246,8 +245,11 @@ class SocketApplication(ServerApplication):
 
     #  Lock
 
+    def is_disabled(self):
+        return any([self._node_updating is True, self._SHUTTING_DOWN is True])
+
     def is_locked(self):
-        return self._node_lock
+        return self._node_locked
 
     @gen.coroutine
     def lock(self, **kwargs):
@@ -262,8 +264,8 @@ class SocketApplication(ServerApplication):
     @gen.coroutine
     def _resume_lock(self, value=None, **kwargs):
         if value is None:
-            value = not self._node_lock
-        self._node_lock = value
+            value = not self._node_locked
+        self._node_locked = value
         yield self.register()
         response = yield self.commit('LOCK' if value is True else 'UNLOCK')
         raise gen.Return(response)
@@ -305,11 +307,10 @@ class SocketApplication(ServerApplication):
         global _CLIENTS
         logging.debug(' * Closing all clients...')
         for client in self.clients:
-            if hasattr(client, 'ws_connection'):
-                try:
-                    client.close()
-                except:
-                    pass
+            try:
+                client.close()
+            except:
+                pass
             self.clients.remove(client)
         _CLIENTS = None
 
@@ -407,28 +408,42 @@ class SocketApplication(ServerApplication):
     def _on_subscribe(self, message):
         if message.kind == 'message':
             _body, body = strucloads(message.body)
-
             if body.action.startswith('SYS_'):
                 self._stop_pull()
-
-                if body.action == 'SYS_UPDATE':
-                    pass
-
-                elif body.action == 'SYS_UPGRADE':
-                    pass
-
                 logging.warn(' >> (%s)', body.action)
-
+                if body.action in ('SYS_UPDATE', 'SYS_UPGRADE') \
+                        and self._node_updating is not True:
+                    self._node_updating = True
+                    yield self._to_update(bool(body.action == 'SYS_UPGRADE'))
             elif body.node_id != self.node_id:
-                if body.action == 'SUBSCRIBE':
+                logging.warn(' > (%s) %s', body.action, body.node_id)
+                if body.action in ('SUBSCRIBE', 'UPDATE'):
                     value = yield gen.Task(self.publisher.get, body.node_id)
                     self.nodes[body.node_id] = jsonloads(value)
                 elif body.action == 'UNSUBSCRIBE' \
                         and body.node_id in self.nodes:
                     del self.nodes[body.node_id]
-                logging.warn(' > (%s) %s', body.action, body.node_id)
-            self._resume_pull()
+            if not self.is_disabled():
+                self._resume_pull()
         raise gen.Return(True)
+
+    @gen.coroutine
+    def _to_update(self, upgrade=False):
+        response = yield git_pull(self.frontend_repository())
+        if isinstance(response, list):
+            response = ''.join(response)
+        logging.debug(' ^ %s', response)
+        if upgrade:
+            for client in self.clients:
+                try:
+                    client.write_message('RESTART')
+                except:
+                    pass
+        self._node_updating = \
+            dict(upgrade=upgrade, date=time.time(), response=response)
+        yield self.register()
+        response = yield self.commit('UPDATE')
+        raise gen.Return(response)
 
     def _connect_pull(self, force=False):
         global _PULL, _PULL_COUNTER
@@ -489,36 +504,42 @@ class SocketApplication(ServerApplication):
                     raise gen.Return(response)
                 _PULL_COUNTER = 0
                 logging.debug(' * Check reset')
-            for node, value in self.nodes.iteritems():
-                value = Struct(value)
-                url = 'http://{ip}:{port}/ping'\
-                    .format(ip=value.ip, port=value.port)
-                response = yield _fetch(url)
-                if isinstance(response, httpclient.HTTPResponse):
-                    if response.code != 200:
-                        logging\
-                            .error(' ! Fetch ~ %s :: %s', node, response.reason)
-                        if node not in self.fallen_nodes:
-                            self.fallen_nodes.add(node)
+            try:
+                for node, value in self.nodes.iteritems():
+                    if self.is_disabled():
+                        raise RuntimeError, 'Update in progress'
+                    value = Struct(value)
+                    url = 'http://{ip}:{port}/ping'\
+                        .format(ip=value.ip, port=value.port)
+                    response = yield _fetch(url)
+                    if isinstance(response, httpclient.HTTPResponse):
+                        if response.code != 200:
+                            logging.error(
+                                ' ! Fetch ~ %s :: %s', node, response.reason)
+                            if node not in self.fallen_nodes:
+                                self.fallen_nodes.add(node)
+                        else:
+                            logging.debug(
+                                ' * Fetch ~ %s :: %s', node, response.body)
+                            if node in self.fallen_nodes:
+                                self.fallen_nodes.remove(node)
+                    elif isinstance(response, httpclient.HTTPError):
+                        logging.error(
+                            ' [!] Fetch ~ %s :: %s', node, response.message)
                     else:
-                        logging\
-                            .debug(' * Fetch ~ %s :: %s', node, response.body)
-                        if node in self.fallen_nodes:
-                            self.fallen_nodes.remove(node)
-                elif isinstance(response, httpclient.HTTPError):
-                    logging\
-                        .error(' [!] Fetch ~ %s :: %s', node, response.message)
-                else:
-                    logging\
-                        .error(' [!!] Fetch ~ %s :: %s', node, type(response))
-            _PULL_COUNTER += 1
-            check = len(self.nodes)
-            fallen = len(self.fallen_nodes)
-            logging.debug(' * Check ~ %s of %s nodes', check - fallen, check)
-            logging.debug(' * Fallen ~ %s of %s nodes', fallen, check)
-            logging.debug(' * Pull ~ %s of %s to reset', _PULL_COUNTER,
-                          check_times)
-            self._resume_pull()
+                        logging.error(
+                            ' [!!] Fetch ~ %s :: %s', node, type(response))
+                _PULL_COUNTER += 1
+                check = len(self.nodes)
+                fallen = len(self.fallen_nodes)
+                logging.debug(' * Check ~ %s of %s nodes', check - fallen,
+                              check)
+                logging.debug(' * Fallen ~ %s of %s nodes', fallen, check)
+                logging.debug(' * Pull ~ %s of %s to reset', _PULL_COUNTER,
+                              check_times)
+                self._resume_pull()
+            except RuntimeError:
+                logging.warn(' > Update in progress')
         raise gen.Return(True)
 
     @gen.coroutine
