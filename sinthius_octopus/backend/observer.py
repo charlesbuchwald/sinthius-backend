@@ -135,6 +135,21 @@ class NodesFallenHandler(WebSocketApiHandler):
         }, sort_keys=True)
 
 
+class NodesAvailablesHandler(WebSocketApiHandler):
+    def get(self, *args, **kwargs):
+        nodes = self.application.n_alive()
+        availables = []
+        for item in sorted(nodes):
+            node = self.application.nodes[item]
+            if node.get('locked', False) is not True:
+                item = (node['priority'], item, node['ip'], node['port'])
+                availables.append(item)
+        self.success({
+            'availables':
+                {'nodes': sorted(availables), 'total': len(availables)}
+        }, sort_keys=True)
+
+
 class NodesHashHandler(WebSocketApiHandler):
     def get(self, *args, **kwargs):
         alive = {k:v['hash'] for k, v in self.application.nodes.iteritems()}
@@ -186,6 +201,7 @@ handlers_list = [
     (r'/api/nodes/alive/?', NodesAliveHandler),
     (r'/api/nodes/alive/health/?', NodesAliveHealthHandler),
     (r'/api/nodes/fallen/?', NodesFallenHandler),
+    (r'/api/nodes/availables/?', NodesAvailablesHandler),
     (r'/api/nodes/hash/?', NodesHashHandler),
     (r'/api/nodes/canonical/?', NodesCanonicalHandler),
     (r'/ws/observer/?', ObserverHandler),

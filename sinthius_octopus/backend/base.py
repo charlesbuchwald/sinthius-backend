@@ -35,6 +35,7 @@ import logging
 import subprocess
 import collections
 from copy import deepcopy
+from sinthius import compat
 from sinthius.conf import settings as global_settings
 from sinthius.drivers import memory, document, database
 from sinthius.drivers.base import _fetch
@@ -417,7 +418,7 @@ class SocketApplication(ServerApplication):
                     yield self._to_update(bool(body.action == 'SYS_UPGRADE'))
             elif body.node_id != self.node_id:
                 logging.warn(' > (%s) %s', body.action, body.node_id)
-                if body.action in ('SUBSCRIBE', 'UPDATE'):
+                if body.action in ('SUBSCRIBE', 'UPDATE', 'LOCK', 'UNLOCK'):
                     value = yield gen.Task(self.publisher.get, body.node_id)
                     self.nodes[body.node_id] = jsonloads(value)
                 elif body.action == 'UNSUBSCRIBE' \
@@ -432,18 +433,33 @@ class SocketApplication(ServerApplication):
         response = yield git_pull(self.frontend_repository())
         if isinstance(response, list):
             response = ''.join(response)
-        logging.debug(' ^ %s', response)
+        logging.debug(' * UPDATE (sys): %s', response)
         if upgrade:
-            for client in self.clients:
-                try:
-                    client.write_message('RESTART')
-                except:
-                    pass
+            self._clients_write_message('RESTART')
         self._node_updating = \
             dict(upgrade=upgrade, date=time.time(), response=response)
         yield self.register()
         response = yield self.commit('UPDATE')
         raise gen.Return(response)
+
+    @gen.coroutine
+    def _to_change(self, data=None):
+        response = None
+        if not self.is_locked():
+            response = yield self.lock()
+            self._clients_write_message(data)
+            logging.debug(' * CHANGE: %s', data)
+        else:
+            logging.error(' ! CHANGE (locked): %s', data)
+        raise gen.Return(response)
+
+    def _clients_write_message(self, message=None):
+        message = jsondumps(message)
+        for client in self.clients:
+            try:
+                client.write_message(message)
+            except:
+                pass
 
     def _connect_pull(self, force=False):
         global _PULL, _PULL_COUNTER

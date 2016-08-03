@@ -85,6 +85,7 @@
                                                 <th>Locked</th>
                                                 <th>Health</th>
                                                 <th>Uptime</th>
+                                                <th>Priority</th>
                                             </tr>
                                         </thead>
                                         <tbody></tbody>
@@ -118,6 +119,7 @@
                                     <table id="nodes_table" class="table display" cellspacing="0" width="100%">
                                         <thead>
                                             <tr>
+                                                <th>Priority</th>
                                                 <th>Name</th>
                                                 <th>Hash</th>
                                                 <th>IP</th>
@@ -330,7 +332,8 @@
                             }
 
                         }
-                    }
+                    },
+                    {'data': 'priority'}
                 ]
             });
 
@@ -342,6 +345,7 @@
                     'dataSrc': 'response'
                 },
                 'columns': [
+                    {'data': 'priority'},
                     {'data': 'name'},
                     {'data': 'hash'},
                     {'data': 'ip'},
