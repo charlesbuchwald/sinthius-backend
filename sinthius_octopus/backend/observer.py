@@ -8,8 +8,7 @@
 
 import logging
 from sinthius.drivers.base import _fetch
-from sinthius_octopus.backend.base import WebSocketApiHandler, \
-    WebSocketHandler, rx_node
+from sinthius_octopus.backend.base import WebSocketApiHandler, rx_node
 from tornado import gen, httpclient
 
 
@@ -37,6 +36,19 @@ class GetHandler(WebSocketApiHandler):
                         '{} : {}'.format(response.reason, response.error)
             else:
                 raise AssertionError, response.message
+        except Exception, e:
+            _log_error(self, e)
+
+
+class SetHandler(WebSocketApiHandler):
+    @gen.coroutine
+    def get(self, *args, **kwargs):
+        try:
+            data = self.json_loads(self.get_argument('data', '{}'))
+            if not data:
+                raise AssertionError, 'Data not found.'
+            response = yield self.application._to_change(data)
+            self.success(response)
         except Exception, e:
             _log_error(self, e)
 
@@ -142,8 +154,7 @@ class NodesAvailablesHandler(WebSocketApiHandler):
         for item in sorted(nodes):
             node = self.application.nodes[item]
             if node.get('locked', False) is not True:
-                item = (node['priority'], item, node['ip'], node['port'])
-                availables.append(item)
+                availables.append((node['priority'], node))
         self.success({
             'availables':
                 {'nodes': sorted(availables), 'total': len(availables)}
@@ -179,18 +190,19 @@ class NodesCanonicalHandler(WebSocketApiHandler):
 
 # Web Socket
 
-class ObserverHandler(WebSocketHandler):
-    def open(self, *args, **kwargs):
-        self.application.clients.add(self)
-
-    def on_close(self):
-        self.application.clients.remove(self)
+# class ObserverHandler(WebSocketHandler):
+#     def open(self, *args, **kwargs):
+#         self.application.clients.add(self)
+#
+#     def on_close(self):
+#         self.application.clients.remove(self)
 
 
 # Handlers
 
 handlers_list = [
     (r'/api/get/?', GetHandler),
+    (r'/api/set/?', SetHandler),
     (r'/api/node/?', NodeHandler),
     (r'/api/node/hash/?', NodeHashHandler),
     (r'/api/node/health/?', NodeHealthHandler),
@@ -204,5 +216,5 @@ handlers_list = [
     (r'/api/nodes/availables/?', NodesAvailablesHandler),
     (r'/api/nodes/hash/?', NodesHashHandler),
     (r'/api/nodes/canonical/?', NodesCanonicalHandler),
-    (r'/ws/observer/?', ObserverHandler),
+    # (r'/ws/observer/?', ObserverHandler),
 ]

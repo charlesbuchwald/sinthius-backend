@@ -246,6 +246,9 @@ class SocketApplication(ServerApplication):
 
     #  Lock
 
+    def is_master(self):
+        return self.settings.get('master', False)
+
     def is_disabled(self):
         return any([self._node_updating is True, self._SHUTTING_DOWN is True])
 
@@ -412,9 +415,7 @@ class SocketApplication(ServerApplication):
             if body.action.startswith('SYS_'):
                 self._stop_pull()
                 logging.warn(' >> (%s)', body.action)
-                if body.action in ('SYS_UPDATE', 'SYS_UPGRADE') \
-                        and self._node_updating is not True:
-                    self._node_updating = True
+                if body.action in ('SYS_UPDATE', 'SYS_UPGRADE'):
                     yield self._to_update(bool(body.action == 'SYS_UPGRADE'))
             elif body.node_id != self.node_id:
                 logging.warn(' > (%s) %s', body.action, body.node_id)
@@ -430,22 +431,26 @@ class SocketApplication(ServerApplication):
 
     @gen.coroutine
     def _to_update(self, upgrade=False):
-        response = yield git_pull(self.frontend_repository())
-        if isinstance(response, list):
-            response = ''.join(response)
-        logging.debug(' * UPDATE (sys): %s', response)
-        if upgrade:
-            self._clients_write_message('RESTART')
-        self._node_updating = \
-            dict(upgrade=upgrade, date=time.time(), response=response)
-        yield self.register()
-        response = yield self.commit('UPDATE')
+        response = None
+        if not self.is_disabled():
+            self._node_updating = True
+            response = yield git_pull(self.frontend_repository())
+            if isinstance(response, list):
+                response = ''.join(response)
+            logging.debug(' * UPDATE (sys): %s', response)
+            if upgrade:
+                self._clients_write_message('RESTART')
+            self._node_updating = \
+                dict(upgrade=upgrade, date=time.time(), response=response)
+            yield self.register()
+            response = yield self.commit('UPDATE')
         raise gen.Return(response)
 
     @gen.coroutine
     def _to_change(self, data=None):
         response = None
-        if not self.is_locked():
+        if all([not self.is_master(), not self.is_locked(),
+                not self.is_disabled()]):
             response = yield self.lock()
             self._clients_write_message(data)
             logging.debug(' * CHANGE: %s', data)
@@ -805,7 +810,6 @@ class ResourceMixin(ConnectorsMixin):
         raise gen.Return(ObjectStorage(response))
 
 
-
 class WebSocketHandler(ResourceMixin, BaseWebSocketHandler):
     @property
     def clients(self):
@@ -817,7 +821,8 @@ class WebSocketHandler(ResourceMixin, BaseWebSocketHandler):
         if action in API_METHODS:
             api = API[action]
             try:
-                getattr(self, api.function, None)(api, message)
+                function = getattr(self, api.function, None)
+                yield function(api, message)
             except:
                 mse = 'Method "%s" not defined.' % action
                 self.write_message(self.json_normalizer(1001, mse))

@@ -14,18 +14,13 @@ from sinthius_octopus.backend.base import WebSocketHandler, \
 from tornado import gen
 
 handlers_list = []
-_status = dict()
-_clients = collections.defaultdict(set)
+# _status = dict()
+# _clients = collections.defaultdict(set)
 
 
 class MissionControlHandler(BaseHandler):
     def get(self, *args, **kwargs):
         self.render()
-
-
-class MissionControlAPIHandler(WebSocketApiHandler):
-    def get(self, *args, **kwargs):
-        self.success('ok')
 
 
 class MissionControlAPIGitHandler(WebSocketApiHandler):
@@ -65,35 +60,34 @@ class MissionControlAPIRemoveFallenHandler(WebSocketApiHandler):
         self.success(response)
 
 
-class MissionControlObserverHandler(WebSocketHandler):
-    def open(self, *args, **kwargs):
-        if self not in _clients:
-            _clients.add(self)
-
-    def on_close(self):
-        if self in _clients:
-            _clients.remove(self)
-
-    @gen.coroutine
-    def on_message(self, message):
-        pass
-
-    def __del__(self):
-        try:
-            _clients.remove(self)
-        except:
-            pass
+# class MissionControlObserverHandler(WebSocketHandler):
+#     def open(self, *args, **kwargs):
+#         if self not in _clients:
+#             _clients.add(self)
+#
+#     def on_close(self):
+#         if self in _clients:
+#             _clients.remove(self)
+#
+#     @gen.coroutine
+#     def on_message(self, message):
+#         pass
+#
+#     def __del__(self):
+#         try:
+#             _clients.remove(self)
+#         except:
+#             pass
 
 
 if global_settings.MASTER is True:
     handlers_list.extend([
         (r'/a/mc/?', MissionControlHandler),
-        (r'/a/mc/api/?', MissionControlAPIHandler),
         (r'/a/mc/api/git/(fetch|pull|update|status|log)/?',
          MissionControlAPIGitHandler),
         (r'/a/mc/api/(update|upgrade)/?', MissionControlAPIUpdateHandler),
         (r'/a/mc/api/remove/fallen/?', MissionControlAPIRemoveFallenHandler),
-        (r'/a/mc/observer/?', MissionControlObserverHandler)
+        # (r'/a/mc/observer/?', MissionControlObserverHandler)
     ])
 
 

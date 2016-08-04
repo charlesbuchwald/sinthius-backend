@@ -78,6 +78,7 @@
                                     <table id="alive_table" class="table display" cellspacing="0" width="100%">
                                         <thead>
                                             <tr>
+                                                <th>Priority</th>
                                                 <th>Name</th>
                                                 <th>Node</th>
                                                 <th>IP</th>
@@ -85,7 +86,6 @@
                                                 <th>Locked</th>
                                                 <th>Health</th>
                                                 <th>Uptime</th>
-                                                <th>Priority</th>
                                             </tr>
                                         </thead>
                                         <tbody></tbody>
@@ -316,6 +316,7 @@
                     'dataSrc': 'response.alive.nodes'
                 },
                 'columns': [
+                    {'data': 'priority'},
                     {'data': 'name'},
                     {'data': 'node'},
                     {'data': 'ip'},
@@ -332,8 +333,7 @@
                             }
 
                         }
-                    },
-                    {'data': 'priority'}
+                    }
                 ]
             });
 
