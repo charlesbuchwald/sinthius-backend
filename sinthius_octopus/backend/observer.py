@@ -8,7 +8,8 @@
 
 import logging
 from sinthius.drivers.base import _fetch
-from sinthius_octopus.backend.base import WebSocketApiHandler, rx_node
+from sinthius_octopus.backend.base import WebSocketApiHandler, \
+    WebSocketHandler, rx_node
 from tornado import gen, httpclient
 
 
@@ -190,12 +191,12 @@ class NodesCanonicalHandler(WebSocketApiHandler):
 
 # Web Socket
 
-# class ObserverHandler(WebSocketHandler):
-#     def open(self, *args, **kwargs):
-#         self.application.clients.add(self)
-#
-#     def on_close(self):
-#         self.application.clients.remove(self)
+class ObserverHandler(WebSocketHandler):
+    def open(self, *args, **kwargs):
+        self.application.clients.add(self)
+
+    def on_close(self):
+        self.application.clients.remove(self)
 
 
 # Handlers
@@ -216,5 +217,5 @@ handlers_list = [
     (r'/api/nodes/availables/?', NodesAvailablesHandler),
     (r'/api/nodes/hash/?', NodesHashHandler),
     (r'/api/nodes/canonical/?', NodesCanonicalHandler),
-    # (r'/ws/observer/?', ObserverHandler),
+    (r'/ws/observer/?', ObserverHandler),
 ]
