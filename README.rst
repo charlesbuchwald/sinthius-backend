@@ -12,10 +12,10 @@ Installation
 
 .. code-block:: bash
 
-    $ pip install sinthius_backend-$VERSION.tar.gz
+    $ pip install $VERSION.tar.gz
 
 **Manual installation**: Download the latest source from `GitHub
-<https://github.com/charlesbuchwald/sinthius_backend/releases>`_.
+<https://github.com/charlesbuchwald/sinthius-backend/releases>`_.
 
 
 License
