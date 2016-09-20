@@ -33,9 +33,7 @@ import socket
 import hashlib
 import logging
 import subprocess
-import collections
 from copy import deepcopy
-from sinthius import compat
 from sinthius.conf import settings as global_settings
 from sinthius.drivers import memory, document, database
 from sinthius.drivers.base import _fetch
@@ -144,7 +142,7 @@ class SocketApplication(ServerApplication):
     def clients(self):
         global _CLIENTS
         if _CLIENTS is None:
-            _CLIENTS = collections.defaultdict(set)
+            _CLIENTS = set()
         return _CLIENTS
 
     @property
@@ -815,6 +813,9 @@ class WebSocketHandler(ResourceMixin, BaseWebSocketHandler):
     def clients(self):
         return self.application.clients
 
+    def check_origin(self, origin):
+        return True
+
     @gen.coroutine
     def on_message(self, message):
         action = str(message).upper()
@@ -832,6 +833,10 @@ class WebSocketHandler(ResourceMixin, BaseWebSocketHandler):
 
 
 class WebSocketApiHandler(ResourceMixin, APIHandler):
+    def set_default_headers(self):
+        self.set_header("Access-Control-Allow-Origin", "*")
+        self.set_header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS')
+
     def get_record(self, arguments):
         if hasattr(arguments, 'arguments'):
             arguments = arguments.arguments
@@ -874,12 +879,12 @@ class StatsHandler(APIHandler):
             chunk['health'] = response
         self.normalize_response(response=chunk, sort_keys=True)
 
-
 handlers_list = [
     (r'/stats', StatsHandler),
     (r'/ping', PingHandler),
+    (r'/frontend/(.*)', web.StaticFileHandler,
+     {'path': global_settings.FRONTEND_PATH.format(**global_settings.PATHS)}),
 ]
-
 
 if global_settings.DEBUG is True:
     class HomeHandler(APIHandler):

@@ -137,7 +137,8 @@ class NodesAliveHealthHandler(WebSocketApiHandler):
                 'alive': {'nodes': alive, 'total': len(alive)},
             }, sort_keys=True)
         except Exception, e:
-            _log_error(self, e)
+            logging.error(' ! %s - %s', self.request.path, e.__str__())
+            self.success({'alive': {'nodes': [], 'total': 0}})
 
 
 class NodesFallenHandler(WebSocketApiHandler):
@@ -193,10 +194,10 @@ class NodesCanonicalHandler(WebSocketApiHandler):
 
 class ObserverHandler(WebSocketHandler):
     def open(self, *args, **kwargs):
-        self.application.clients.add(self)
+        self.clients.add(self)
 
     def on_close(self):
-        self.application.clients.remove(self)
+        self.clients.remove(self)
 
 
 # Handlers
